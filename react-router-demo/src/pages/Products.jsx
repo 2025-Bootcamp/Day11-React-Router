@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router'
 import ProductCard from '../components/ProductCard.jsx'
 import styles from './product.module.css'
 import mockProducts from '../data/products.json'
@@ -6,11 +7,43 @@ import mockProducts from '../data/products.json'
 
 function Products() {
   const [products] = useState(mockProducts)
-  const [selectedCategory, setSelectedCategory] = useState('全部')
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedCategory = searchParams.get('category') || '全部'
+  const searchTerm = searchParams.get('search') || ''
 
   // 获取所有分类
   const categories = ['全部', ...new Set(products.map(product => product.category))]
+
+  // 工具函数：更新 URL 查询参数
+  const updateSearchParams = (updates) => {
+    const params = new URLSearchParams(searchParams)
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === '') {
+        params.delete(key)
+      } else {
+        params.set(key, String(value))
+      }
+    })
+    setSearchParams(params)
+  }
+
+  // 处理分类选择
+  const handleCategoryChange = (category) => {
+    if (category === '全部') {
+      updateSearchParams({ category: undefined })
+    } else {
+      updateSearchParams({ category })
+    }
+  }
+
+  // 处理搜索输入
+  const handleSearchChange = (value) => {
+    if (value === '') {
+      updateSearchParams({ search: undefined })
+    } else {
+      updateSearchParams({ search: value })
+    }
+  }
 
   // 过滤产品
   const filteredProducts = products.filter(product => {
@@ -31,7 +64,7 @@ function Products() {
             type="text"
             placeholder="搜索产品..."
             value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
+            onChange={e => handleSearchChange(e.target.value)}
             className={styles.searchInput}
           />
         </div>
@@ -41,7 +74,7 @@ function Products() {
           {categories.map(category => (
             <button
               key={category}
-              onClick={() => setSelectedCategory(category)}
+              onClick={() => handleCategoryChange(category)}
               className={
                 selectedCategory === category
                   ? `${styles.categoryButton} ${styles.categoryButtonActive}`
